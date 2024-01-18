@@ -24,16 +24,8 @@
   "content_scripts": [
     {
       "matches": [
-        "*://kickasstorrent.cr/*",
-        "*://kickasstorrents.cr/*",
-        "*://kickasstorrent.to/*",
-        "*://kickasstorrents.to/*",
-        "*://kickass.sx/*",
-        "*://katcr.to/*",
-        "*://kat.am/*",
-        "*://kat.cr/*",
-        "*://kickass.cr/*",
-        "*://kickass.to/*"
+        "https://*/*",
+        "http://*/*"
       ],
       "js": [
         "static/content.tsx"

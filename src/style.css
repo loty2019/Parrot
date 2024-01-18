@@ -81,3 +81,8 @@ input:checked + .slider:before {
 .data tr.odd.red-background:hover, .data tr.even.red-background:hover {
   background-color: rgba(128, 0, 0, 0.08) !important;
 }
+
+.glowing-border {
+  /* filter: drop-shadow(0 0 10px rgb(255, 251, 0)); */
+  filter: drop-shadow(0 0 10px rgba(46, 46, 46, 0.515));
+ }

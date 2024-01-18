@@ -4,27 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { Review } from "~features/reviewInfo";
 import { TrailerButton } from "./features/trailer-button";
 import {NotAllowed} from "~features/notAllowed";
+import {Music} from "~features/music";
 import { createRoot } from 'react-dom/client';
 import { Loading } from "~features/loading";
 import "react-tooltip/dist/react-tooltip.css";
 import 'style.css';
 
+
 export const config: PlasmoCSConfig = {
-  matches: 
-  [ "*://kickasstorrent.cr/*",
-    "*://kickasstorrents.cr/*",
-    "*://kickasstorrent.to/*",
-    "*://kickasstorrents.to/*", 
-    "*://kickass.sx/*", 
-    "*://katcr.to/*", 
-    "*://kat.am/*", 
-    "*://kat.cr/*", 
-    "*://kickass.cr/*", 
-    "*://kickass.to/*"
-  ],
+  matches: ["https://*/*", "http://*/*"],
   all_frames: true
 }
 
+// inject css
 export const getStyle = () => {
   const style = document.createElement("style")
   style.textContent = cssText
@@ -37,28 +29,29 @@ const PlasmoOverlay = () => {
 // return the movie year
 const getMovieYear = ({TorrName}) => {
   // if the check is in local storage
-  if ( localStorage.getItem(TorrName) !== null) {
+  if (localStorage.getItem(TorrName) !== null) {
     TorrName = localStorage.getItem(TorrName);
   }
   // extract year
-  const yearPattern = /\d{4}/;
+  const yearPattern = /(?<!\d)\d{4}(?!p|MB)/g; // Global flag to find all matches
+  const currentYear = new Date().getFullYear();
 
-  //const SpecialYearPattern = /d{4}\d{4}/;
+  const yearMatches = TorrName.match(yearPattern); // Get all year matches
 
-  const yearMatch = TorrName.match(yearPattern); // Get the year of the movie
   let year = null;
-    if (yearMatch) {
-      year = parseInt(yearMatch[0], 10); // Access the first element of the array
+  if (yearMatches && yearMatches.length >= 2) {
+    // Choose the second year if available
+    year = parseInt(yearMatches[1], 10);
+  } else if (yearMatches) {
+    // Fallback to the first year if only one is available
+    year = parseInt(yearMatches[0], 10);
+  }
 
-      // If year is lower than 1888 then it is not a valid year
-      // Get the current year
-      const currentYear = new Date().getFullYear();
+  if (year < 1888 || year > currentYear + 1) {
+    year = null; // or handle this case as needed
+    //throw new Error('Invalid year');
+  }
 
-      // Use the currentYear variable in your code
-      if (year < 1888 || year > currentYear + 1) {
-        year = null; // or handle this case as needed
-      }
-    }
   return year;
 }
 
@@ -105,12 +98,13 @@ const getMovieName = ({ TorrName }) => {
 };
 
 // get movie year
-const addTrailerColumn = () => {
+const kickAddTrailerColumn = () => {
   const table = document.querySelector('table.data.frontPageWidget');
   if (!table) return;
 
   // Add header for the Trailer column
-  const headerRow = table.querySelector('tr.firstr');
+  const headerRow = table.querySelector('tr.firstr') ;
+  if (!headerRow) return;
   const trailerHeader = document.createElement('th');
   trailerHeader.textContent = 'Trailer';
   trailerHeader.classList.add('center');
@@ -124,14 +118,8 @@ const addTrailerColumn = () => {
     const isGameRow = row.querySelector('.markeredBlock a[href*="/games/"]') !== null; 
     const trailerCell = document.createElement('td'); // create a new cell for the Trailer button
     let TorrName = row.querySelector('a.cellMainLink').textContent; 
-    
-    let movieNameAndYear = null; // Concatenate the movie name and year
-    // print movie name
-    //console.log(getMovieName({TorrName}));
-    // print movie year
-    //console.log(getMovieYear({TorrName}));
-
-
+    let movieNameAndYear = null;
+  
     if (getMovieYear({TorrName}) === null) {
       movieNameAndYear = getMovieName({TorrName});
     } else {
@@ -148,7 +136,7 @@ const addTrailerColumn = () => {
       //console.log(movieNameAndYear);
 
       if (isMusicRow) {
-        trailerButtonContainer.textContent = 'Music';
+        root.render(<Music/>);
         trailerCell.appendChild(trailerButtonContainer);
       } else if (isGameRow){
         trailerButtonContainer.textContent = 'Game';
@@ -163,8 +151,62 @@ const addTrailerColumn = () => {
       root.render(<NotAllowed/>);
       trailerCell.appendChild(trailerButtonContainer);
     }
-    
+    //row.appendChild(trailerCell);
     row.insertBefore(trailerCell, row.children[1]);
+  });
+};
+
+
+const bayAddTrailerColumn = () => {
+  var headerRow = document.querySelector("#tableHead tr");
+  if (!headerRow) return;
+
+  // Adding to the header
+  var newHeader = document.createElement("th");
+  newHeader.textContent = "Trailer";
+  // give margin all around
+  newHeader.style.padding = "10px";
+  headerRow.insertBefore(newHeader, headerRow.children[2]); // Insert before the second column
+
+  // Adding to each row in the body
+  var rows = document.querySelectorAll("#searchResult tbody tr");
+  rows.forEach(function(row) {
+    const isExcludedRow = row.querySelector('.vertTh a').textContent.includes('Porn'); // exclude adult content
+    const isMusicRow = row.querySelector('.vertTh a').textContent.includes('Audio'); // check for music content
+    const isGameRow = row.querySelector('.vertTh a').textContent.includes('Games');  // check for game content
+    var trailerCell = document.createElement("td");
+    let TorrName = row.querySelector('a.detLink').textContent; 
+    let movieNameAndYear = null;
+  
+    if (getMovieYear({TorrName}) === null) {
+      movieNameAndYear = getMovieName({TorrName});
+    } else {
+      movieNameAndYear = getMovieName({TorrName}) + ' ' + getMovieYear({TorrName});
+    }
+
+    const trailerButtonContainer = document.createElement('div');
+    const root = createRoot(trailerButtonContainer);
+    // Check the category of the torrent
+    if (!isExcludedRow) {
+      
+      if (isMusicRow) {
+        root.render(<Music/>);
+        trailerCell.appendChild(trailerButtonContainer);
+      } else if (isGameRow){
+        trailerButtonContainer.textContent = 'Game';
+        trailerCell.appendChild(trailerButtonContainer);
+      } else {
+        
+        // Mount the React component
+        root.render(<TrailerButton trailerUrl={movieNameAndYear}/>);
+        trailerCell.appendChild(trailerButtonContainer);
+      }
+    } else {
+      root.render(<NotAllowed/>);
+      trailerCell.appendChild(trailerButtonContainer);
+    }
+
+    row.insertBefore(trailerCell, row.children[2]); // Insert before the second column
   });
 };
 
@@ -183,7 +225,7 @@ const processReviewRow = (row) => {
     // Check the category of the torrent
     if (!isExcludedRow) {
       if (isMusicRow) {
-        reviewContainer.textContent = 'Music Review';
+        root.render(<Music/>);
         reviewCell.appendChild(reviewContainer);
         delay = 0;
       } else if (isGameRow){
@@ -303,12 +345,6 @@ const addPosterColumn = (row) => {
       return;
     }
 
-    // Remove the icon
-    const Icon = row.querySelector('.iaconbox > a');
-    if (Icon) {
-      Icon.remove();
-    }
-
     // Select the 'torrent name' cell from the row
     const nameContainer = row.querySelector('.markeredBlock .cellMainLink');
 
@@ -319,7 +355,7 @@ const addPosterColumn = (row) => {
       img.src = poster;
 
       
-      img.className = 'flex inline-flex m-2 hover:scale-[3.5] transition-all duration-200 w-11 h-11 rounded-md';
+      img.className = 'glowing-border flex inline-flex m-2 hover:scale-[3.5] hover:-translate-y-20 transition-all duration-200 w-11 h-11 rounded-md';
 
       // Add event listener to open the image fullscreen on click
       img.addEventListener('click', () => {
@@ -364,8 +400,24 @@ const UltraHighDefinition = () => {
   });
 }
 
-addTrailerColumn();
-addReviewColumn();
-UltraHighDefinition();
+const CurrentUrlComponent = () => {
+  useEffect(() => {
+    // Use window.location to get the current URL
+    const currentUrl = window.location.href;
+    
+    // if the url contains thepiratebay
+    if (currentUrl.includes('thepiratebay')) {
+      
+      bayAddTrailerColumn();
+      //addReviewColumn();
+      //UltraHighDefinition();
 
-export default PlasmoOverlay
+    } else if (currentUrl.includes('kickasstorrent' || 'kickass' || 'kat')) {
+      kickAddTrailerColumn();
+      addReviewColumn();
+      UltraHighDefinition();
+    }
+  }, []);
+};
+
+export default CurrentUrlComponent;
