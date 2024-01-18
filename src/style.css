@@ -66,3 +66,18 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
+.data tr.odd.green-background, .data tr.even.green-background {
+  background-color: rgba(0, 128, 0, 0.091) !important;
+}
+
+.data tr.odd.green-background:hover, .data tr.even.green-background:hover {
+  background-color: rgba(0, 128, 0, 0.071) !important;
+}
+
+.data tr.odd.red-background, .data tr.even.red-background {
+  background-color: rgba(128, 0, 0, 0.092) !important;
+}
+
+.data tr.odd.red-background:hover, .data tr.even.red-background:hover {
+  background-color: rgba(128, 0, 0, 0.08) !important;
+}

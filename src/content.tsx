@@ -1,12 +1,13 @@
 import cssText from "data-text:~style.css"
 import type { PlasmoCSConfig } from "plasmo"
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { Review } from "~features/reviewInfo";
 import { TrailerButton } from "./features/trailer-button";
 import {NotAllowed} from "~features/notAllowed";
 import { createRoot } from 'react-dom/client';
+import { Loading } from "~features/loading";
 import "react-tooltip/dist/react-tooltip.css";
+import 'style.css';
 
 export const config: PlasmoCSConfig = {
   matches: 
@@ -35,9 +36,15 @@ const PlasmoOverlay = () => {
 
 // return the movie year
 const getMovieYear = ({TorrName}) => {
-  
+  // if the check is in local storage
+  if ( localStorage.getItem(TorrName) !== null) {
+    TorrName = localStorage.getItem(TorrName);
+  }
   // extract year
   const yearPattern = /\d{4}/;
+
+  //const SpecialYearPattern = /d{4}\d{4}/;
+
   const yearMatch = TorrName.match(yearPattern); // Get the year of the movie
   let year = null;
     if (yearMatch) {
@@ -56,42 +63,46 @@ const getMovieYear = ({TorrName}) => {
 }
 
 // return movie name
-const getMovieName = ({TorrName}) => {
-  const sePattern = /S\d{2}E\d{2}/; // Season and episode pattern
+const getMovieName = ({ TorrName }) => {
+  // Check if the TorrName is in local storage and use it if available
+  if (localStorage.getItem(TorrName) !== null) {
+    TorrName = localStorage.getItem(TorrName);
+  }
 
+  // Function to get the movie year, assumed to be available in scope
+  const year = getMovieYear({ TorrName });
+
+  // Regular expressions for season and episode, and season patterns
+  const seasonEpisodePattern = /S\d{2}E\d{2}/;
+  const seasonPattern = /S\d{2}/;
+
+  // Initialize movieName with TorrName
   let movieName = TorrName;
-  if (getMovieYear({TorrName}) === null) {
-    // If year is not found, look for season and episode pattern
-    const seMatch = TorrName.match(sePattern);
-    if (seMatch) {
-      // Split the name at the season and episode pattern 
-      movieName = TorrName.split(seMatch[0])[0].trim() + ' ' + seMatch[0];
-      // remove the season and episode pattern from the movie name
-      movieName = movieName.replace(seMatch[0], "");
-      // remove any "(" and ")" from the movie name
-      movieName = movieName.replace("(", "");
-      // if the name ends with a space, remove it
-      if (movieName.endsWith(" ")) {
-        movieName = movieName.substring(0, movieName.length - 1);
-      }
 
-      // console.log(movieName);
-    } else {
-      // If neither year nor season/episode pattern is found
-      movieName = TorrName;
-    }
+  // Check and remove year, season and episode, or just season pattern
+  if (year) {
+    movieName = movieName.split(year)[0].trim();
   } else {
-    // If year is found, split the name at the year
-    movieName = TorrName.split(getMovieYear({TorrName}))[0].trim();
-    // remove any "(" and ")" from the movie name
-    movieName = movieName.replace("(", "");
-    // if the name ends with a space, remove it
-    if (movieName.endsWith(" ")) {
-      movieName = movieName.substring(0, movieName.length - 1);
+    const seasonEpisodeMatch = TorrName.match(seasonEpisodePattern);
+    const seasonMatch = TorrName.match(seasonPattern);
+
+    if (seasonEpisodeMatch) {
+      movieName = TorrName.split(seasonEpisodeMatch[0])[0].trim();
+    } else if (seasonMatch) {
+      movieName = TorrName.split(seasonMatch[0])[0].trim();
     }
   }
-  return String(movieName);
-}
+
+  // Remove "Season" with optional number
+  movieName = movieName.replace(/Season\s*\d*/, "");
+
+  movieName = movieName.split(/[\s_][\d{4}|S\d{2}]/)[0].trim();
+
+  // Remove any remaining parentheses and trailing spaces
+  movieName = movieName.replace(/[()]/g, "").trim();
+
+  return movieName;
+};
 
 // get movie year
 const addTrailerColumn = () => {
@@ -110,6 +121,7 @@ const addTrailerColumn = () => {
   rows.forEach(row => {
     const isExcludedRow = row.querySelector('.markeredBlock a[href*="/xxx/"]') !== null; // exclude adult content
     const isMusicRow = row.querySelector('.markeredBlock a[href*="/music/"]') !== null; // check for music content
+    const isGameRow = row.querySelector('.markeredBlock a[href*="/games/"]') !== null; 
     const trailerCell = document.createElement('td'); // create a new cell for the Trailer button
     let TorrName = row.querySelector('a.cellMainLink').textContent; 
     
@@ -136,10 +148,11 @@ const addTrailerColumn = () => {
       //console.log(movieNameAndYear);
 
       if (isMusicRow) {
-
         trailerButtonContainer.textContent = 'Music';
         trailerCell.appendChild(trailerButtonContainer);
-        
+      } else if (isGameRow){
+        trailerButtonContainer.textContent = 'Game';
+        trailerCell.appendChild(trailerButtonContainer);
       } else {
         
         // Mount the React component
@@ -157,6 +170,7 @@ const addTrailerColumn = () => {
 
 const processReviewRow = (row) => {
   return new Promise<void>((resolve) => {
+    let delay = 200;
     const isExcludedRow = row.querySelector('.markeredBlock a[href*="/xxx/"]') !== null; // exclude adult content
     const isMusicRow = row.querySelector('.markeredBlock a[href*="/music/"]') !== null; // check for music content
     const isGameRow = row.querySelector('.markeredBlock a[href*="/games/"]') !== null; // check for movie content
@@ -171,38 +185,49 @@ const processReviewRow = (row) => {
       if (isMusicRow) {
         reviewContainer.textContent = 'Music Review';
         reviewCell.appendChild(reviewContainer);
+        delay = 0;
       } else if (isGameRow){
         reviewContainer.textContent = 'Game Review';
         reviewCell.appendChild(reviewContainer);
+        delay = 0;
       } else {
         let movieName = getMovieName({TorrName});
         let movieYear = getMovieYear({TorrName});
-        
-        // temporary placeholder
-        reviewContainer.textContent = 'Loading...';
-        
-        // Fetch and render review data here
-        root.render(<Review name={movieName} year={movieYear}/>); // Use the getMovieRating component
 
+        if (localStorage.getItem(movieName + movieYear) !== null) {
+
+          const data = JSON.parse(localStorage.getItem(movieName + movieYear));
+
+          if (!Array.isArray(data.Ratings) || data.Ratings.length === 0) {
+            delay = 300;
+          } else{
+            delay = 0;
+          }
+        }
+        // Fetch and render review data here
+        root.render(<Review name={movieName} year={movieYear} TorrName={TorrName}/>); // Use the getMovieRating component
+        
+        addPosterColumn(row);
         reviewCell.appendChild(reviewContainer);
       }
     } else {
       root.render(<NotAllowed/>);
       reviewCell.appendChild(reviewContainer);
+      delay = 0;
     }
     row.insertBefore(reviewCell, row.children[2]);
 
     // After processing the row, wait for a specified time
     setTimeout(() => {
       resolve();
-    }, 300); // delay  between eah row
+    }, delay); // delay  between eah row
   });
 };
 
 const loadingRow = (row) => {
   const loadingCell = document.createElement('td');
   const loadingContainer = document.createElement('div');
-  loadingContainer.textContent = 'Loading...';
+  createRoot(loadingContainer).render(<Loading/>);
   loadingCell.appendChild(loadingContainer);
   row.insertBefore(loadingCell, row.children[2]);
 };
@@ -222,17 +247,125 @@ const addReviewColumn = async () => {
   headerRow.insertBefore(reviewHeader, headerRow.children[2]);
 
   const rows = table.querySelectorAll('tr.odd, tr.even');
+  // fast load
   for (const row of rows) {
     loadingRow(row);
+    let TorrName = row.querySelector('a.cellMainLink').textContent;
+    let movieName = getMovieName({TorrName});
+    let movieYear = getMovieYear({TorrName});
+    let movieNameYear = movieName + movieYear; // Concatenate the movie name and year
+    const reviewCell = document.createElement('td');
+    const reviewContainer = document.createElement('div');
+
+    if (localStorage.getItem(movieNameYear) !== null) {
+      const data = JSON.parse(localStorage.getItem(movieNameYear));
+    
+      if (data.Ratings && Array.isArray(data.Ratings) && data.Ratings.length === 0) {
+        // if the data are bad don't fast load
+        //loadingRow(row);
+      } else {
+        removeLoadingRow(row);
+        // if the data are good fast load
+        createRoot(reviewContainer).render(<Review name={movieName} year={movieYear} TorrName={TorrName}/>);
+        addPosterColumn(row);
+        reviewCell.appendChild(reviewContainer);
+        row.insertBefore(reviewCell, row.children[2]);
+      }
+    } 
+    
   }
+  //Load everything else
   for (const row of rows) {
     removeLoadingRow(row);
     await processReviewRow(row); // Process each row one by one for reviews
+       // Add poster column
   }
 };
 
+const addPosterColumn = (row) => {
+  //const isExcludedRow = row.querySelector('.markeredBlock a[href*="/xxx/"]') !== null; // exclude adult content
+  //const isMusicRow = row.querySelector('.markeredBlock a[href*="/music/"]') !== null; // check for music content
+    // create a new cell for the Trailer button
+  let TorrName = row.querySelector('a.cellMainLink').textContent; 
+  let movieName = getMovieName({TorrName});
+  let movieYear = getMovieYear({TorrName});
+  let movieNameYear = movieName + movieYear;
+
+  let poster = null;
+  // get the poster from local storage 
+  if (localStorage.getItem(movieNameYear) !== null) {
+    const data = JSON.parse(localStorage.getItem(movieNameYear));
+    poster = data.Poster;
+      // Check if the poster already exists in the row
+    const existingPoster = row.querySelector('.markeredBlock img');
+    if (existingPoster) {
+      // Poster already exists, no need to add another
+      return;
+    }
+
+    // Remove the icon
+    const Icon = row.querySelector('.iaconbox > a');
+    if (Icon) {
+      Icon.remove();
+    }
+
+    // Select the 'torrent name' cell from the row
+    const nameContainer = row.querySelector('.markeredBlock .cellMainLink');
+
+    if (nameContainer && poster !== 'N/A') {
+      // Create an image element
+      const img = document.createElement('img');
+      // Set the source of the image (replace 'your-image-url.jpg' with your image URL)
+      img.src = poster;
+
+      
+      img.className = 'flex inline-flex m-2 hover:scale-[3.5] transition-all duration-200 w-11 h-11 rounded-md';
+
+      // Add event listener to open the image fullscreen on click
+      img.addEventListener('click', () => {
+        // Open the image fullscreen logic here
+        window.open(poster);
+      });
+
+      // Insert the image before the name
+      nameContainer.parentElement.insertBefore(img, nameContainer);
+    }
+  } 
+
+}
+
+const UltraHighDefinition = () => {
+  const table = document.querySelector('table.data.frontPageWidget');
+  if (!table) return;
+
+  // Select all rows in the table, excluding the header row
+  const rows = table.querySelectorAll('tr:not(.firstr)');
+
+  rows.forEach(row => {
+      // Select the 'torrent name' cell from the row
+      const torrentNameCell = row.querySelector('td div.torrentname');
+      if (torrentNameCell) {
+          // Check if the text within the 'torrent name' cell contains '2160'
+          if (torrentNameCell.textContent.includes('2160p') || 
+            torrentNameCell.textContent.includes('4K') || 
+            torrentNameCell.textContent.includes('UHD') || 
+            torrentNameCell.textContent.includes('2160')) {
+
+              // Change the background color of the row to green
+              row.classList.add('green-background');
+          } 
+          
+          if (torrentNameCell.textContent.includes('720p') || 
+            torrentNameCell.textContent.includes('HDCAM') ||
+            torrentNameCell.textContent.includes('CAM')) {
+            row.classList.add('red-background');
+          }
+      }
+  });
+}
 
 addTrailerColumn();
 addReviewColumn();
+UltraHighDefinition();
 
 export default PlasmoOverlay
