@@ -118,14 +118,13 @@ const kickAddTrailerColumn = () => {
     const isGameRow = row.querySelector('.markeredBlock a[href*="/games/"]') !== null; 
     const trailerCell = document.createElement('td'); // create a new cell for the Trailer button
     let TorrName = row.querySelector('a.cellMainLink').textContent; 
-    let movieNameAndYear = null;
-  
-    if (getMovieYear({TorrName}) === null) {
-      movieNameAndYear = getMovieName({TorrName});
-    } else {
-      movieNameAndYear = getMovieName({TorrName}) + ' ' + getMovieYear({TorrName});
-    }
-    // console.log(movieNameAndYear);
+
+    let movieName = getMovieName({TorrName});
+    let movieYear = getMovieYear({TorrName});
+
+    if (movieYear === null) {
+      movieYear = '';
+    }  
 
     // Create a container for the React component
     const trailerButtonContainer = document.createElement('div');
@@ -144,7 +143,7 @@ const kickAddTrailerColumn = () => {
       } else {
         
         // Mount the React component
-        root.render(<TrailerButton trailerUrl={movieNameAndYear}/>);
+        root.render(<TrailerButton name={movieName} year={movieYear}/>);
         trailerCell.appendChild(trailerButtonContainer);
       }
     } else {
@@ -176,13 +175,13 @@ const bayAddTrailerColumn = () => {
     const isGameRow = row.querySelector('.vertTh a').textContent.includes('Games');  // check for game content
     var trailerCell = document.createElement("td");
     let TorrName = row.querySelector('a.detLink').textContent; 
-    let movieNameAndYear = null;
-  
-    if (getMovieYear({TorrName}) === null) {
-      movieNameAndYear = getMovieName({TorrName});
-    } else {
-      movieNameAndYear = getMovieName({TorrName}) + ' ' + getMovieYear({TorrName});
-    }
+
+    let movieName = getMovieName({TorrName});
+    let movieYear = getMovieYear({TorrName});
+
+    if (movieYear === null) {
+      movieYear = '';
+    }  
 
     const trailerButtonContainer = document.createElement('div');
     const root = createRoot(trailerButtonContainer);
@@ -198,7 +197,7 @@ const bayAddTrailerColumn = () => {
       } else {
         
         // Mount the React component
-        root.render(<TrailerButton trailerUrl={movieNameAndYear}/>);
+        root.render(<TrailerButton name={movieName} year={movieYear}/>);
         trailerCell.appendChild(trailerButtonContainer);
       }
     } else {
@@ -322,9 +321,13 @@ const addReviewColumn = async () => {
     await processReviewRow(row); // Process each row one by one for reviews
        // Add poster column
   }
+  //add poster column
+  for (const row of rows) {
+    await addPosterColumn(row);
+  }
 };
 
-const addPosterColumn = (row) => {
+const addPosterColumn = async (row) => {
   //const isExcludedRow = row.querySelector('.markeredBlock a[href*="/xxx/"]') !== null; // exclude adult content
   //const isMusicRow = row.querySelector('.markeredBlock a[href*="/music/"]') !== null; // check for music content
     // create a new cell for the Trailer button
@@ -401,23 +404,47 @@ const UltraHighDefinition = () => {
 }
 
 const CurrentUrlComponent = () => {
-  useEffect(() => {
-    // Use window.location to get the current URL
-    const currentUrl = window.location.href;
-    
-    // if the url contains thepiratebay
-    if (currentUrl.includes('thepiratebay')) {
-      
-      bayAddTrailerColumn();
-      //addReviewColumn();
-      //UltraHighDefinition();
+  const [isEnabled, setIsEnabled] = useState(false);
 
-    } else if (currentUrl.includes('kickasstorrent' || 'kickass' || 'kat')) {
-      kickAddTrailerColumn();
-      addReviewColumn();
-      UltraHighDefinition();
-    }
+  useEffect(() => {
+    // Function to handle messages from the popup script
+    const handleMessage = (request, sender, sendResponse) => {
+      if (request.isEnabled !== undefined) {
+        setIsEnabled(request.isEnabled);
+        checkUrlAndExecute(request.isEnabled);
+      }
+    };
+
+    // Add listener for messages
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    // Initial check and setup
+    checkUrlAndExecute(isEnabled);
+
+    // Cleanup function
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
   }, []);
+
+  const checkUrlAndExecute = (enabled) => {
+    const currentUrl = window.location.href;
+
+    if (enabled) {
+      if (currentUrl.includes('thepiratebay')) {
+
+        bayAddTrailerColumn();
+        
+      } else if (currentUrl.match(/kickasstorrent|kickass|kat/)) {
+        kickAddTrailerColumn();
+        addReviewColumn();
+        UltraHighDefinition();
+      }
+    }
+  };
+
+  return null; // To render nothing
 };
+
 
 export default CurrentUrlComponent;
