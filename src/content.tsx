@@ -410,6 +410,7 @@ const CurrentUrlComponent = () => {
     // Function to handle messages from the popup script
     const handleMessage = (request, sender, sendResponse) => {
       if (request.isEnabled !== undefined) {
+        console.log('Received isEnabled:', request.isEnabled);
         setIsEnabled(request.isEnabled);
         checkUrlAndExecute(request.isEnabled);
       }

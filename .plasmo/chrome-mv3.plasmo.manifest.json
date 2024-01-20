@@ -21,6 +21,10 @@
   "author": "loty2019",
   "name": "DEV | Parrot",
   "description": "A pirate trusty sidekick that can give you a sneak preview.",
+  "options_ui": {
+    "page": "./options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": [

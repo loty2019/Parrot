@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client"
 import { getLayout } from "@plasmo-static-common/react"
 
 // @ts-ignore
-import * as Component from "~options"
+import * as Component from "../../src/options.tsx"
 
 let __plasmoRoot: HTMLElement = null
 

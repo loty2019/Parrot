@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './style.css'; // Assuming this is the correct path to your CSS file
 import Logo from 'data-base64:~assets/images/parrotLogo.png';
+import { sendToBackground } from "@plasmohq/messaging";
+
 
 function IndexPopup() {
+  console.log("IndexPopup component is rendering");
   // Initialize state with value from local storage
   const [isEnabled, setIsEnabled] = useState(() => {
     const saved = localStorage.getItem('isEnabled');
@@ -13,19 +16,19 @@ function IndexPopup() {
   useEffect(() => {
     localStorage.setItem('isEnabled', isEnabled.toString());
     chrome.runtime.sendMessage({ isEnabled: isEnabled });
-    console.log('isEnabled: ' + isEnabled);
   }, [isEnabled]);
 
   const toggleExtension = () => {
     setIsEnabled(!isEnabled);
-    console.log('isEnabled: ' + isEnabled);
   };
 
   return (
     <div className="w-48 h-fit flex flex-col items-center bg-[#fffffffb]">
-      <p className="text-lg font-extrabold">Parrot</p>
+      <div className='w-48 flex justify-center bg-slate-300 '>
+        <p className="text-lg font-extrabold">Parrot</p>
+      </div>
 
-      <img className="w-20 h-20" src={Logo} alt="Parrot Logo" />
+      <img className="w-20 h-20 mt-2" src={Logo} alt="Parrot Logo" />
 
       <p className="text-sm font-extrabold mb-5">Ahoy, Matey!</p>
 
