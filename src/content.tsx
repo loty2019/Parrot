@@ -431,7 +431,7 @@ const CurrentUrlComponent = () => {
   const checkUrlAndExecute = (enabled) => {
     const currentUrl = window.location.href;
 
-    if (enabled) {
+    if (!enabled) {
       if (currentUrl.includes('thepiratebay')) {
 
         bayAddTrailerColumn();
