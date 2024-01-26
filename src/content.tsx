@@ -358,7 +358,7 @@ const addPosterColumn = async (row) => {
       img.src = poster;
 
       
-      img.className = 'glowing-border flex inline-flex m-2 hover:scale-[3.5] hover:-translate-y-20 transition-all duration-200 w-11 h-11 rounded-md';
+      img.className = 'glowing-border z-50 flex inline-flex m-2 hover:scale-[3.5] hover:-translate-y-20 transition-all duration-200 w-11 h-11 rounded-md';
 
       // Add event listener to open the image fullscreen on click
       img.addEventListener('click', () => {
@@ -370,7 +370,6 @@ const addPosterColumn = async (row) => {
       nameContainer.parentElement.insertBefore(img, nameContainer);
     }
   } 
-
 }
 
 const UltraHighDefinition = () => {
