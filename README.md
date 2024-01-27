@@ -6,6 +6,8 @@ Specifically designed to work on multiple torrent websites using various APIs, n
 
 The extension also comes with other features such as bad file detection, UHD detection, and more, these features can be easily set by the user to make the experience more personalized.
 
+Note: any API key lost around in the code has been disabled :) so don't try
+
 # DISCLAIMER:
 
 ### General Use:
