@@ -56,4 +56,9 @@ This disclaimer is subject to change at any time. I encourage any user to regula
 
 As an open-source project, contributions to Parrot are welcomed. Contributors are expected to adhere to the established coding standards and to submit changes via pull requests for review. I reserve the right to modify or reject contributions that do not align with the project's goals or ethical standards.
 
-**Note**: any API key lost around in the code has been disabled :)
+**Note**: any API key lost around in the code has been disabled
+
+![419059_69d8c403166b4937be0eb5be018ba334~mv2](https://github.com/loty2019/Parrot/assets/125715080/eb2abcbf-aef8-44d9-826d-344cb62826db)
+![419059_b27553fe7561487fa0642646a3393734~mv2](https://github.com/loty2019/Parrot/assets/125715080/f5f52b39-a119-4af4-80c9-e3373f6f9fac)
+![419059_90c4f82cb0dd481aaa5cf708b1c50bfc~mv2](https://github.com/loty2019/Parrot/assets/125715080/13806d73-c3fe-4727-b539-2a8dd9e276bb)
+
